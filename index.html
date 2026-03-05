@@ -10,13 +10,16 @@
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 20px; margin-bottom: 16px; }
         .checkbox-label { display: flex; align-items: flex-start; margin-bottom: 12px; cursor: pointer; padding: 8px 0; -webkit-tap-highlight-color: transparent; }
         .checkbox-label input[type="checkbox"] { margin-top: 2px; margin-right: 14px; width: 22px; height: 22px; flex-shrink: 0; accent-color: #0077b6; }
-        .checkbox-text { line-height: 1.4; font-size: 1.05rem; pointer-events: none; /* 讓點擊直接穿透到 label */ }
+        .checkbox-text { line-height: 1.4; font-size: 1.05rem; pointer-events: none; }
         .result-box { position: fixed; bottom: 0; left: 0; width: 100%; background: #0077b6; color: white; padding: 20px; text-align: center; font-size: 1.25rem; font-weight: bold; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 15px rgba(0,0,0,0.15); z-index: 999; }
         .hidden { display: none !important; }
-        .reason-list { font-size: 0.95rem; font-weight: normal; text-align: left; background: rgba(255,255,255,0.2); padding: 12px; border-radius: 8px; margin-top: 12px; line-height: 1.6; max-height: 35vh; overflow-y: auto; }
+        .reason-list { font-size: 0.95rem; font-weight: normal; text-align: left; background: rgba(255,255,255,0.2); padding: 12px; border-radius: 8px; margin-top: 12px; line-height: 1.6; max-height: 30vh; overflow-y: auto; }
+        /* 自費比較按鈕的樣式 */
+        .pdf-btn { margin-top: 12px; display: inline-block; background-color: white; color: #d97706; font-size: 1rem; font-weight: bold; padding: 8px 20px; border-radius: 9999px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-decoration: none; transition: transform 0.1s; }
+        .pdf-btn:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="pb-60">
+<body class="pb-64">
     <div class="max-w-md mx-auto p-4">
         <h1 class="text-2xl font-bold text-center text-gray-800 mb-4">Abemaciclib 藥物評估表</h1>
         
@@ -85,6 +88,9 @@
     <div id="resultBanner" class="result-box bg-gray-500">
         <div id="mainStatus">請勾選條件以評估給付資格</div>
         <div id="reasonList" class="hidden reason-list"></div>
+        <a id="compareBtn" href="comparison.pdf" target="_blank" class="hidden pdf-btn">
+            📊 自費選項比較 (PDF)
+        </a>
     </div>
 
     <script>
@@ -108,7 +114,6 @@
                            document.getElementById('adj_t5_multi').checked));
 
             var isNHI = baseNHI && (neoNHI || adjNHI);
-
             var isKi67 = document.getElementById('neo_ki67').checked || document.getElementById('adj_ki67').checked;
 
             var hasExclusion = document.getElementById('exc_male').checked ||
@@ -123,6 +128,7 @@
             var banner = document.getElementById('resultBanner');
             var mainStatus = document.getElementById('mainStatus');
             var reasonList = document.getElementById('reasonList');
+            var compareBtn = document.getElementById('compareBtn');
             
             var reasons = [];
 
@@ -130,6 +136,7 @@
                 mainStatus.innerText = "✅ 符合健保給付資格";
                 banner.style.backgroundColor = "#10b981"; 
                 reasonList.className = "hidden reason-list";
+                compareBtn.className = "hidden pdf-btn"; // 隱藏 PDF 按鈕
             } else if (isSelfPay || hasExclusion) {
                 mainStatus.innerText = "💡 建議自費使用 Abemaciclib";
                 banner.style.backgroundColor = "#f59e0b"; 
@@ -162,10 +169,15 @@
                 } else {
                     reasonList.className = "hidden reason-list";
                 }
+                
+                // 顯示 PDF 比較按鈕
+                compareBtn.className = "pdf-btn";
+
             } else {
                 mainStatus.innerText = "請繼續勾選或目前未達標準";
                 banner.style.backgroundColor = "#6b7280"; 
                 reasonList.className = "hidden reason-list";
+                compareBtn.className = "hidden pdf-btn"; // 隱藏 PDF 按鈕
             }
         }
 
@@ -178,7 +190,6 @@
             window.scrollTo(0, 0);
         }
         
-        // 初始執行一次
         runCalc();
     </script>
 </body>
