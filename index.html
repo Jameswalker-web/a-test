@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Abemaciclib (Verzenio) 早期乳癌評估工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 20px; margin-bottom: 16px; }
+        .checkbox-label { display: flex; align-items: flex-start; margin-bottom: 12px; cursor: pointer; padding: 8px 0; -webkit-tap-highlight-color: transparent; }
+        .checkbox-label input[type="checkbox"] { margin-top: 2px; margin-right: 14px; width: 22px; height: 22px; flex-shrink: 0; accent-color: #0077b6; }
+        .checkbox-text { line-height: 1.4; font-size: 1.05rem; pointer-events: none; /* 讓點擊直接穿透到 label */ }
+        .result-box { position: fixed; bottom: 0; left: 0; width: 100%; background: #0077b6; color: white; padding: 20px; text-align: center; font-size: 1.25rem; font-weight: bold; border-top-left-radius: 16px; border-top-right-radius: 16px; box-shadow: 0 -4px 15px rgba(0,0,0,0.15); z-index: 999; }
+        .hidden { display: none !important; }
+        .reason-list { font-size: 0.95rem; font-weight: normal; text-align: left; background: rgba(255,255,255,0.2); padding: 12px; border-radius: 8px; margin-top: 12px; line-height: 1.6; max-height: 35vh; overflow-y: auto; }
+    </style>
+</head>
+<body class="pb-60">
+    <div class="max-w-md mx-auto p-4">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-4">Abemaciclib 藥物評估表</h1>
+        
+        <div class="flex justify-end mb-4">
+            <button onclick="resetForm()" type="button" class="bg-gray-200 text-gray-800 active:bg-gray-400 font-semibold py-2 px-4 rounded-lg shadow-sm transition duration-150 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                重置條件
+            </button>
+        </div>
+
+        <div class="card">
+            <h2 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">基本病理報告</h2>
+            <label class="checkbox-label"><input type="checkbox" id="erpr_gt30" onchange="runCalc()"> <span class="checkbox-text">ER 或 PR > 30%</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="her2_neg" onchange="runCalc()"> <span class="checkbox-text">HER2 陰性</span></label>
+        </div>
+
+        <div class="card">
+            <h2 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">治療歷程</h2>
+            <label class="checkbox-label"><input type="checkbox" id="chemo_used" onchange="runCalc()"> <span class="checkbox-text">使用標準化療 <br><span class="text-gray-500 text-sm">(特殊情況可事審允許)</span></span></label>
+            <label class="checkbox-label"><input type="checkbox" id="radio_used" onchange="runCalc()"> <span class="checkbox-text">使用放療 <br><span class="text-gray-500 text-sm">(特殊情況可事審允許)</span></span></label>
+            <label class="checkbox-label"><input type="checkbox" id="endo_12w" onchange="runCalc()"> <span class="checkbox-text">內分泌治療 12 周以內</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="surg_16m" onchange="runCalc()"> <span class="checkbox-text">手術後 16 個月內</span></label>
+        </div>
+
+        <div class="card">
+            <h2 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">化療與病理條件 (擇一填寫)</h2>
+            <div class="mb-4">
+                <h3 class="font-semibold text-gray-700 mb-2">使用 Neoadjuvant chemotherapy</h3>
+                <label class="checkbox-label"><input type="checkbox" id="neo_n1_3" onchange="runCalc()"> <span class="checkbox-text text-sm">化療前病理(SLNB, CNB, FNA)淋巴結陽性 1-3 顆<br><span class="text-gray-500 text-xs">(含N1mi,不含鎖骨上或內乳淋巴結)</span></span></label>
+                <div class="pl-4 border-l-2 border-gray-200 ml-3 mb-2">
+                    <p class="text-sm text-gray-500 mb-1">若選上項，需再符合以下擇一：</p>
+                    <label class="checkbox-label"><input type="checkbox" id="neo_g3" onchange="runCalc()"> <span class="checkbox-text text-sm">化療前腫瘤病理 Grade 3</span></label>
+                    <label class="checkbox-label"><input type="checkbox" id="neo_t5_uni" onchange="runCalc()"> <span class="checkbox-text text-sm">化療前腫瘤影像 &ge;5公分 Unifocal</span></label>
+                    <label class="checkbox-label"><input type="checkbox" id="neo_t5_multi" onchange="runCalc()"> <span class="checkbox-text text-sm">化療前腫瘤影像 &ge;5公分 Multifocal or Multicentric</span></label>
+                </div>
+                <label class="checkbox-label"><input type="checkbox" id="neo_ki67" onchange="runCalc()"> <span class="checkbox-text text-sm">化療前腫瘤病理 Ki-67 &ge;20% <br><span class="text-amber-600 font-semibold">(自費條件)</span></span></label>
+            </div>
+            <div class="border-t pt-4">
+                <h3 class="font-semibold text-gray-700 mb-2">使用 Adjuvant chemotherapy</h3>
+                <label class="checkbox-label"><input type="checkbox" id="adj_n4" onchange="runCalc()"> <span class="checkbox-text text-sm">手術病理(ALND)淋巴結陽性 &ge;4 顆<br><span class="text-gray-500 text-xs">(含N1mi,不含鎖骨上或內乳淋巴結)</span></span></label>
+                <label class="checkbox-label"><input type="checkbox" id="adj_n1_3" onchange="runCalc()"> <span class="checkbox-text text-sm">手術病理(SLNB/ALND)淋巴結陽性 1-3 顆<br><span class="text-gray-500 text-xs">(含N1mi,不含鎖骨上或內乳淋巴結)</span></span></label>
+                <div class="pl-4 border-l-2 border-gray-200 ml-3 mb-2">
+                    <p class="text-sm text-gray-500 mb-1">若選 1-3 顆，需再符合以下擇一：</p>
+                    <label class="checkbox-label"><input type="checkbox" id="adj_g3" onchange="runCalc()"> <span class="checkbox-text text-sm">手術腫瘤病理 Grade 3</span></label>
+                    <label class="checkbox-label"><input type="checkbox" id="adj_t5_uni" onchange="runCalc()"> <span class="checkbox-text text-sm">手術腫瘤病理 &ge;5公分 Unifocal</span></label>
+                    <label class="checkbox-label"><input type="checkbox" id="adj_t5_multi" onchange="runCalc()"> <span class="checkbox-text text-sm">手術腫瘤病理 &ge;5公分 Multifocal or Multicentric</span></label>
+                </div>
+                <label class="checkbox-label"><input type="checkbox" id="adj_ki67" onchange="runCalc()"> <span class="checkbox-text text-sm">手術腫瘤病理 Ki-67 &ge;20% <br><span class="text-amber-600 font-semibold">(自費條件)</span></span></label>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">自費評估特殊條件</h2>
+            <p class="text-sm text-gray-500 mb-2">若符合病理條件，但有以下狀況：</p>
+            <label class="checkbox-label"><input type="checkbox" id="exc_male" onchange="runCalc()"> <span class="checkbox-text">男性</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="exc_no_chemo" onchange="runCalc()"> <span class="checkbox-text">未使用化療</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="exc_erpr_low" onchange="runCalc()"> <span class="checkbox-text">ER 或 PR &le; 30%</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="exc_no_radio" onchange="runCalc()"> <span class="checkbox-text">未使用放療</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="exc_endo_over12" onchange="runCalc()"> <span class="checkbox-text">內分泌治療超過 12 周</span></label>
+            <label class="checkbox-label"><input type="checkbox" id="exc_surg_over16" onchange="runCalc()"> <span class="checkbox-text">手術後超過 16 個月</span></label>
+        </div>
+    </div>
+
+    <div id="resultBanner" class="result-box bg-gray-500">
+        <div id="mainStatus">請勾選條件以評估給付資格</div>
+        <div id="reasonList" class="hidden reason-list"></div>
+    </div>
+
+    <script>
+        function runCalc() {
+            var baseNHI = document.getElementById('erpr_gt30').checked && 
+                          document.getElementById('her2_neg').checked &&
+                          document.getElementById('chemo_used').checked &&
+                          document.getElementById('radio_used').checked &&
+                          document.getElementById('endo_12w').checked &&
+                          document.getElementById('surg_16m').checked;
+
+            var neoNHI = document.getElementById('neo_n1_3').checked && 
+                         (document.getElementById('neo_g3').checked || 
+                          document.getElementById('neo_t5_uni').checked || 
+                          document.getElementById('neo_t5_multi').checked);
+
+            var adjNHI = document.getElementById('adj_n4').checked || 
+                         (document.getElementById('adj_n1_3').checked && 
+                          (document.getElementById('adj_g3').checked || 
+                           document.getElementById('adj_t5_uni').checked || 
+                           document.getElementById('adj_t5_multi').checked));
+
+            var isNHI = baseNHI && (neoNHI || adjNHI);
+
+            var isKi67 = document.getElementById('neo_ki67').checked || document.getElementById('adj_ki67').checked;
+
+            var hasExclusion = document.getElementById('exc_male').checked ||
+                               document.getElementById('exc_no_chemo').checked ||
+                               document.getElementById('exc_erpr_low').checked ||
+                               document.getElementById('exc_no_radio').checked ||
+                               document.getElementById('exc_endo_over12').checked ||
+                               document.getElementById('exc_surg_over16').checked;
+            
+            var isSelfPay = (!isNHI && (neoNHI || adjNHI || isKi67)) || ((neoNHI || adjNHI) && hasExclusion);
+
+            var banner = document.getElementById('resultBanner');
+            var mainStatus = document.getElementById('mainStatus');
+            var reasonList = document.getElementById('reasonList');
+            
+            var reasons = [];
+
+            if (isNHI && !hasExclusion && !document.getElementById('exc_erpr_low').checked) {
+                mainStatus.innerText = "✅ 符合健保給付資格";
+                banner.style.backgroundColor = "#10b981"; 
+                reasonList.className = "hidden reason-list";
+            } else if (isSelfPay || hasExclusion) {
+                mainStatus.innerText = "💡 建議自費使用 Abemaciclib";
+                banner.style.backgroundColor = "#f59e0b"; 
+
+                if (!document.getElementById('erpr_gt30').checked) reasons.push("未勾選 ER 或 PR > 30%");
+                if (!document.getElementById('her2_neg').checked) reasons.push("未勾選 HER2 陰性");
+                if (!document.getElementById('chemo_used').checked) reasons.push("未勾選使用標準化療 (特殊情況事審可允許)");
+                if (!document.getElementById('radio_used').checked) reasons.push("未勾選使用放療 (特殊情況事審可允許)");
+                if (!document.getElementById('endo_12w').checked) reasons.push("不符內分泌治療 12 周內");
+                if (!document.getElementById('surg_16m').checked) reasons.push("不符手術後 16 個月內");
+
+                if (!(neoNHI || adjNHI)) {
+                    if (isKi67) {
+                        reasons.push("Ki-67 ≥ 20% (此為自費給付條件，健保未給付)");
+                    } else {
+                        reasons.push("淋巴結與腫瘤大小/分級未達健保給付標準");
+                    }
+                }
+
+                if (document.getElementById('exc_male').checked) reasons.push("男性 (健保不給付)");
+                if (document.getElementById('exc_no_chemo').checked) reasons.push("未使用化療 (健保不給付，但特殊情況事審可允許)");
+                if (document.getElementById('exc_erpr_low').checked) reasons.push("ER/PR ≤ 30% (健保不給付)");
+                if (document.getElementById('exc_no_radio').checked) reasons.push("未使用放療 (健保不給付，但特殊情況事審可允許)");
+                if (document.getElementById('exc_endo_over12').checked) reasons.push("內分泌治療已超過 12 周");
+                if (document.getElementById('exc_surg_over16').checked) reasons.push("手術後已超過 16 個月");
+
+                if (reasons.length > 0) {
+                    reasonList.innerHTML = "<strong>未符合健保給付原因：</strong><br>• " + reasons.join("<br>• ");
+                    reasonList.className = "reason-list";
+                } else {
+                    reasonList.className = "hidden reason-list";
+                }
+            } else {
+                mainStatus.innerText = "請繼續勾選或目前未達標準";
+                banner.style.backgroundColor = "#6b7280"; 
+                reasonList.className = "hidden reason-list";
+            }
+        }
+
+        function resetForm() {
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            for (var i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = false;
+            }
+            runCalc();
+            window.scrollTo(0, 0);
+        }
+        
+        // 初始執行一次
+        runCalc();
+    </script>
+</body>
+</html>
